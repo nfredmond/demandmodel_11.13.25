@@ -15,6 +15,12 @@
 # Load data for Berkeley, CA
 python run_model.py --place "Berkeley, California, USA" --state 06 --county 001
 
+# Load data with visualizations
+python run_model.py --place "Berkeley, California, USA" --state 06 --county 001 --visualize
+
+# Load data and auto-open visualizations
+python run_model.py --place "Berkeley, California, USA" --state 06 --county 001 --view
+
 # Load data for a custom bounding box (San Francisco downtown)
 python run_model.py --bbox 37.8 37.78 -122.39 -122.41 --state 06 --county 075
 
@@ -63,6 +69,21 @@ model.export_to_csv()
 model.export_to_geopackage()
 ```
 
+## Viewing Outputs
+
+### Interactive Visualizations
+
+```bash
+# View all visualizations for a project
+python view_outputs.py --project my_model
+
+# List available projects
+python view_outputs.py --list
+
+# Create and open index page
+python view_outputs.py --project my_model --index
+```
+
 ## Output Files
 
 All outputs are saved to `output/{project_name}/`:
@@ -75,6 +96,10 @@ All outputs are saved to `output/{project_name}/`:
 
 - **GeoPackage (for GIS):**
   - `{project}.gpkg` - Spatial data (open in QGIS, ArcGIS, etc.)
+
+- **Visualizations (if created with --visualize):**
+  - `map_*.html` - Interactive maps (open in browser)
+  - `plot_*.png` - Statistical plots (open in image viewer)
 
 ## Common State FIPS Codes
 

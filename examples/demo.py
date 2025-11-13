@@ -86,6 +86,16 @@ def demo_berkeley():
         print("\nSample OD pairs (First 10):")
         print(od_matrix.head(10).to_string())
 
+        # Create visualizations
+        print("\n" + "=" * 70)
+        print("CREATING VISUALIZATIONS")
+        print("=" * 70)
+
+        viz_files = model.create_visualizations()
+        print("\nCreated visualizations:")
+        for name, path in viz_files.items():
+            print(f"  ✓ {name}: {path}")
+
         # Export results
         print("\n" + "=" * 70)
         print("EXPORTING RESULTS")
@@ -108,8 +118,13 @@ def demo_berkeley():
         print("  - output/berkeley_demo/berkeley_demo_links.csv")
         print("  - output/berkeley_demo/berkeley_demo_od_matrix.csv")
         print("  - output/berkeley_demo/berkeley_demo.gpkg")
-        print("\nYou can open the .gpkg file in QGIS or other GIS software")
-        print("to visualize the network, TAZs, and demographic data.")
+        print("\nVisualizations:")
+        print("  - Interactive maps (HTML): map_*.html")
+        print("  - Statistical plots (PNG): plot_*.png")
+        print("\nTo view visualizations:")
+        print("  python view_outputs.py --project berkeley_demo")
+        print("\nOr open them manually in your browser/image viewer")
+        print("\nYou can also open the .gpkg file in QGIS or other GIS software")
 
     except Exception as e:
         print(f"\n❌ Error: {e}")

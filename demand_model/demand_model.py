@@ -12,6 +12,7 @@ import os
 from .census_loader import CensusDataLoader
 from .osm_loader import OSMNetworkLoader
 from .taz_handler import TAZHandler
+from .visualizer import DemandModelVisualizer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class TransportationDemandModel:
         self.census_loader = CensusDataLoader(census_api_key)
         self.network_loader = OSMNetworkLoader()
         self.taz_handler = TAZHandler()
+        self.visualizer = DemandModelVisualizer()
 
         # Data containers
         self.demographic_data = None
@@ -49,6 +51,9 @@ class TransportationDemandModel:
         self.data_dir = f"data/{project_name}"
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
+
+        # Set visualizer output directory
+        self.visualizer.output_dir = self.output_dir
 
         logger.info(f"Initialized Transportation Demand Model: {project_name}")
 
@@ -442,3 +447,178 @@ class TransportationDemandModel:
             stats['total_trips'] = self.od_matrix['trips'].sum()
 
         return stats
+
+    def create_visualizations(
+        self,
+        create_maps: bool = True,
+        create_plots: bool = True
+    ) -> Dict[str, str]:
+        """
+        Create all visualizations for the model
+
+        Args:
+            create_maps: Whether to create interactive maps
+            create_plots: Whether to create static plots
+
+        Returns:
+            Dictionary with paths to created visualizations
+        """
+        if self.taz_gdf is None or self.links_gdf is None:
+            raise ValueError("Load study area first")
+
+        logger.info("Creating visualizations...")
+
+        output_files = {}
+
+        if create_maps:
+            # TAZ map
+            if self.taz_gdf is not None and 'total_population' in self.taz_gdf.columns:
+                logger.info("Creating TAZ population map...")
+                taz_map_path = f"{self.output_dir}/map_taz_population.html"
+                self.visualizer.create_taz_map(
+                    self.taz_gdf,
+                    variable='total_population',
+                    title=f"{self.project_name}: Population by TAZ",
+                    save_path=taz_map_path
+                )
+                output_files['taz_population_map'] = taz_map_path
+
+            # Employment map
+            if self.taz_gdf is not None and 'total_employment' in self.taz_gdf.columns:
+                logger.info("Creating TAZ employment map...")
+                employment_map_path = f"{self.output_dir}/map_taz_employment.html"
+                self.visualizer.create_taz_map(
+                    self.taz_gdf,
+                    variable='total_employment',
+                    title=f"{self.project_name}: Employment by TAZ",
+                    save_path=employment_map_path
+                )
+                output_files['taz_employment_map'] = employment_map_path
+
+            # Network map
+            if self.links_gdf is not None and self.nodes_gdf is not None:
+                logger.info("Creating network map...")
+                network_map_path = f"{self.output_dir}/map_network.html"
+                self.visualizer.create_network_map(
+                    self.nodes_gdf,
+                    self.links_gdf,
+                    title=f"{self.project_name}: Road Network",
+                    save_path=network_map_path
+                )
+                output_files['network_map'] = network_map_path
+
+            # Combined map
+            if self.taz_gdf is not None and self.links_gdf is not None:
+                logger.info("Creating combined map...")
+                combined_map_path = f"{self.output_dir}/map_combined.html"
+                self.visualizer.create_combined_map(
+                    self.taz_gdf,
+                    self.links_gdf,
+                    variable='total_population',
+                    title=f"{self.project_name}: TAZ and Network",
+                    save_path=combined_map_path
+                )
+                output_files['combined_map'] = combined_map_path
+
+        if create_plots:
+            # TAZ statistics plots
+            if self.taz_gdf is not None:
+                logger.info("Creating TAZ statistics plots...")
+                taz_stats = self.calculate_taz_statistics()
+                taz_plot_path = f"{self.output_dir}/plot_taz_statistics.png"
+                self.visualizer.plot_taz_statistics(taz_stats, save_path=taz_plot_path)
+                output_files['taz_statistics_plot'] = taz_plot_path
+
+            # Network statistics plots
+            if self.links_gdf is not None:
+                logger.info("Creating network statistics plots...")
+                network_plot_path = f"{self.output_dir}/plot_network_statistics.png"
+                self.visualizer.plot_network_statistics(self.links_gdf, save_path=network_plot_path)
+                output_files['network_statistics_plot'] = network_plot_path
+
+            # OD flow plots
+            if self.od_matrix is not None and len(self.od_matrix) > 0:
+                logger.info("Creating OD flow plots...")
+                od_plot_path = f"{self.output_dir}/plot_od_flows.png"
+                self.visualizer.plot_od_flows(self.od_matrix, save_path=od_plot_path)
+                output_files['od_flows_plot'] = od_plot_path
+
+        logger.info(f"Created {len(output_files)} visualizations")
+        return output_files
+
+    def create_taz_map(
+        self,
+        variable: str = 'total_population',
+        save_path: Optional[str] = None
+    ):
+        """
+        Create interactive map of TAZ data
+
+        Args:
+            variable: Variable to visualize
+            save_path: Path to save HTML file
+
+        Returns:
+            Folium map object
+        """
+        if self.taz_gdf is None:
+            raise ValueError("Load study area first")
+
+        if save_path is None:
+            save_path = f"{self.output_dir}/map_taz_{variable}.html"
+
+        return self.visualizer.create_taz_map(
+            self.taz_gdf,
+            variable=variable,
+            save_path=save_path
+        )
+
+    def create_network_map(self, save_path: Optional[str] = None):
+        """
+        Create interactive map of road network
+
+        Args:
+            save_path: Path to save HTML file
+
+        Returns:
+            Folium map object
+        """
+        if self.links_gdf is None or self.nodes_gdf is None:
+            raise ValueError("Load study area first")
+
+        if save_path is None:
+            save_path = f"{self.output_dir}/map_network.html"
+
+        return self.visualizer.create_network_map(
+            self.nodes_gdf,
+            self.links_gdf,
+            save_path=save_path
+        )
+
+    def create_combined_map(
+        self,
+        variable: str = 'total_population',
+        save_path: Optional[str] = None
+    ):
+        """
+        Create map with both TAZ and network layers
+
+        Args:
+            variable: Variable to visualize on TAZ
+            save_path: Path to save HTML file
+
+        Returns:
+            Folium map object
+        """
+        if self.taz_gdf is None or self.links_gdf is None:
+            raise ValueError("Load study area first")
+
+        if save_path is None:
+            save_path = f"{self.output_dir}/map_combined.html"
+
+        return self.visualizer.create_combined_map(
+            self.taz_gdf,
+            self.links_gdf,
+            variable=variable,
+            save_path=save_path
+        )

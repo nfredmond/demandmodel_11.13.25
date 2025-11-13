@@ -11,8 +11,10 @@ A comprehensive Python application for building transportation demand models tha
 - 🗺️ **TAZ Management**: Creates and manages Traffic Analysis Zones from census geographies
 - 🚗 **Network Analysis**: Processes road networks with nodes, links, and attributes
 - 📊 **Demand Modeling**: Includes trip generation and distribution (gravity model)
+- 📈 **Interactive Visualizations**: Create maps and plots of all model outputs
 - 💾 **Multiple Export Formats**: Export to CSV, GeoPackage, Shapefile
 - 🎯 **Flexible Geography**: Load data by place name, bounding box, or custom polygon
+- 👁️ **Built-in Viewer**: Automatically view outputs in browser/image viewer
 
 ## Installation
 
@@ -65,9 +67,15 @@ model.load_study_area_by_place(
 stats = model.get_summary_stats()
 print(stats)
 
+# Create visualizations
+viz_files = model.create_visualizations()
+
 # Export results
 model.export_to_csv()
 model.export_to_geopackage()
+
+# View visualizations
+# Run: python view_outputs.py --project my_model
 ```
 
 ### Run Demo
@@ -258,6 +266,76 @@ print(taz_stats.head())
 centroids = model.taz_handler.calculate_taz_centroids()
 print(centroids.head())
 ```
+
+## Visualizations
+
+The app can create interactive maps and static plots to visualize all model outputs.
+
+### Create All Visualizations
+
+```python
+# Create all visualizations (maps and plots)
+viz_files = model.create_visualizations()
+
+# Created visualizations:
+# - Interactive TAZ maps (population, employment)
+# - Interactive network map
+# - Combined TAZ + network map
+# - TAZ statistics plots
+# - Network statistics plots
+# - OD flow plots
+```
+
+### View Visualizations
+
+```bash
+# View all visualizations for a project
+python view_outputs.py --project my_model
+
+# List available projects
+python view_outputs.py --list
+
+# Create index page with all visualizations
+python view_outputs.py --project my_model --index
+
+# Interactive mode - select which files to open
+python view_outputs.py --project my_model --interactive
+```
+
+### Create Specific Visualizations
+
+```python
+# Create individual maps
+model.create_taz_map(variable='total_population')
+model.create_taz_map(variable='total_employment')
+model.create_network_map()
+model.create_combined_map()
+
+# Maps are saved as HTML files in output/{project}/
+```
+
+### CLI with Visualizations
+
+```bash
+# Create visualizations during model run
+python run_model.py --place "Berkeley, CA" --state 06 --county 001 --visualize
+
+# Create and auto-open visualizations
+python run_model.py --place "Berkeley, CA" --state 06 --county 001 --view
+```
+
+### Visualization Outputs
+
+**Interactive Maps (HTML):**
+- `map_taz_population.html` - Population choropleth with tooltips
+- `map_taz_employment.html` - Employment choropleth with tooltips
+- `map_network.html` - Road network with road type coloring
+- `map_combined.html` - TAZ and network overlay
+
+**Static Plots (PNG):**
+- `plot_taz_statistics.png` - Population/employment distributions
+- `plot_network_statistics.png` - Link lengths, speed limits, road types
+- `plot_od_flows.png` - Top OD pairs and trip distributions
 
 ## Output Files
 

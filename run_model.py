@@ -93,6 +93,16 @@ State FIPS Codes:
         default=1.5,
         help='Friction factor for gravity model (default: 1.5)'
     )
+    parser.add_argument(
+        '--visualize',
+        action='store_true',
+        help='Create visualizations (maps and plots)'
+    )
+    parser.add_argument(
+        '--view',
+        action='store_true',
+        help='Automatically open visualizations after creation'
+    )
 
     args = parser.parse_args()
 
@@ -197,6 +207,16 @@ State FIPS Codes:
             print(f"Total OD pairs with trips: {len(od_matrix):,}")
             print(f"Total trips: {od_matrix['trips'].sum():,.0f}")
 
+        # Create visualizations
+        if args.visualize or args.view:
+            print("\n" + "=" * 70)
+            print("CREATING VISUALIZATIONS")
+            print("=" * 70)
+            viz_files = model.create_visualizations()
+            print(f"✓ Created {len(viz_files)} visualizations")
+            for name, path in viz_files.items():
+                print(f"  - {name}: {path}")
+
         # Export results
         print("\n" + "=" * 70)
         print("EXPORTING RESULTS")
@@ -207,14 +227,34 @@ State FIPS Codes:
         model.export_to_geopackage()
         print(f"✓ GeoPackage exported to output/{args.project}/{args.project}.gpkg")
 
+        # Open visualizations if requested
+        if args.view:
+            print("\n" + "=" * 70)
+            print("OPENING VISUALIZATIONS")
+            print("=" * 70)
+            import webbrowser
+            import os
+            for name, path in viz_files.items():
+                if path.endswith('.html'):
+                    print(f"Opening {name}...")
+                    webbrowser.open(f'file://{os.path.abspath(path)}')
+
         print("\n" + "=" * 70)
         print("MODEL RUN COMPLETED SUCCESSFULLY!")
         print("=" * 70)
         print(f"\nOutput files saved to: output/{args.project}/")
         print("\nNext steps:")
-        print("  1. Open the .gpkg file in QGIS to visualize the data")
-        print("  2. Review the CSV files for tabular analysis")
-        print("  3. Use the OD matrix for further modeling")
+        if args.visualize:
+            print("  1. View interactive maps and plots:")
+            print(f"     python view_outputs.py --project {args.project}")
+            print("  2. Open the .gpkg file in QGIS to visualize the data")
+            print("  3. Review the CSV files for tabular analysis")
+            print("  4. Use the OD matrix for further modeling")
+        else:
+            print("  1. Open the .gpkg file in QGIS to visualize the data")
+            print("  2. Review the CSV files for tabular analysis")
+            print("  3. Use the OD matrix for further modeling")
+            print("  4. Run with --visualize to create interactive maps and plots")
 
     except Exception as e:
         print("\n" + "=" * 70)
